@@ -64,8 +64,11 @@ void graphics_init(int w, int h)
 	}
 }/*}}}*/
 
-void show_piece(int p, int r, int w, int x, int y) {
-	SDL_SetRenderDrawColor(renderer, piece_colors[p].r, piece_colors[p].g, piece_colors[p].b, 255);
+void show_piece(int p, int r, int w, int x, int y, char is_ghost) {
+	if (is_ghost)
+		SDL_SetRenderDrawColor(renderer, piece_colors[p].r*0.7, piece_colors[p].g*0.7, piece_colors[p].b*0.7, 255);
+	else
+		SDL_SetRenderDrawColor(renderer, piece_colors[p].r, piece_colors[p].g, piece_colors[p].b, 255);
 	for (int i = 0; i < 4; i++) {
 		SDL_Rect rect = {
 			x + pieces[p][r][i].x * w,
@@ -83,12 +86,12 @@ void show(struct GameData *d)
 	SDL_RenderClear(renderer);
 
 	// Layout:
-	// display current and held piece
+	// display held piece
 	SDL_Rect hold = {gs.mw, gs.mw, gs.mw*5, gs.mw*5};
 	SDL_SetRenderDrawColor(renderer, piece_colors[NoPiece].r, piece_colors[NoPiece].g, piece_colors[NoPiece].b, 255);
 	SDL_RenderFillRect(renderer, &hold);
 	if (d->hp)
-		show_piece(d->hp, 0, gs.mw, hold.x+gs.mw/2, hold.y+gs.mw/2);
+		show_piece(d->hp, 0, gs.mw, hold.x+gs.mw/2, hold.y+gs.mw/2, 0);
 	SDL_Rect field = {hold.x + hold.w + gs.mw, hold.y, d->w*gs.mw, d->h*gs.mw};
 	SDL_SetRenderDrawColor(renderer, piece_colors[NoPiece].r, piece_colors[NoPiece].g, piece_colors[NoPiece].b, 255);
 	SDL_RenderFillRect(renderer, &field);
@@ -98,11 +101,18 @@ void show(struct GameData *d)
 		SDL_Rect r = { field.x + i % d->w * gs.mw, field.y + i / d->w * gs.mw, gs.mw, gs.mw };
 		SDL_RenderFillRect(renderer, &r);
 	}
-	show_piece(d->cp, d->cr, gs.mw, field.x + d->cpos.x*gs.mw, field.y + d->cpos.y*gs.mw);
+	// display current piece and ghost piece
+	int dy = 1;
+	while (!collides(d, d->cr, (struct Point){0, dy})) {
+		dy++;
+	}
+	dy--;
+	show_piece(d->cp, d->cr, gs.mw, field.x + d->cpos.x*gs.mw, field.y + (d->cpos.y+dy)*gs.mw, 1);
+	show_piece(d->cp, d->cr, gs.mw, field.x + d->cpos.x*gs.mw, field.y + d->cpos.y*gs.mw, 0);
 	// display preview
 	SDL_Rect preview = {field.x + field.w + gs.mw, field.y, gs.mw*5, gs.mw*5};
 	for (int i = 0; i < 5; i++) {
-		show_piece(d->bag[(d->pc + i) % 14], 0, gs.mw*3/4, preview.x+gs.mw*3/8, preview.y+gs.mw*3/8 + gs.mw*15/4*i);
+		show_piece(d->bag[(d->pc + i) % 14], 0, gs.mw*3/4, preview.x+gs.mw*3/8, preview.y+gs.mw*3/8 + gs.mw*15/4*i, 0);
 	}
 	SDL_RenderPresent(renderer);
 }/*}}}*/
