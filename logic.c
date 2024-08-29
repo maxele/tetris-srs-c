@@ -4,7 +4,7 @@ struct GameData *game_data_new(char /*width*/ w, char /*height*/ h)
 {
 	struct GameData *d = malloc(sizeof(struct GameData));
 	d->field = malloc(w * h);
-	memset(d->field, 0, w*h);
+	memset(d->field, NoPiece, w*h);
 	d->w = w;
 	d->h = h;
 	d->cp = NoPiece;
@@ -24,8 +24,8 @@ void show_stdout(struct GameData *d)
 		if (i % d->w == 0 && i != 0) printf("|\n| ");
 		current_piece_intersection = 0;
 		for (int j = 0; j < 4; j++) {
-			int ji = (pieces[d->cp][d->cr][j].x + d->cpos.x)
-				+ (pieces[d->cp][d->cr][j].y + d->cpos.y) * d->w;
+			int ji = (LOGIC_PIECE_DATA[d->cp][d->cr][j].x + d->cpos.x)
+				+ (LOGIC_PIECE_DATA[d->cp][d->cr][j].y + d->cpos.y) * d->w;
 			if (i == ji) {
 				printf("%c%c ", pieces_chars[d->cp], pieces_chars[d->cp]);
 				current_piece_intersection = 1;
@@ -44,8 +44,8 @@ char collides(struct GameData *d, char /*rotation*/ r, struct Point /*offset*/ o
 {
 	for (int i = 0; i < 4; i++) {
 		struct Point /*position*/ p = {
-			pieces[d->cp][r][i].x + o.x + d->cpos.x,
-			pieces[d->cp][r][i].y + o.y + d->cpos.y
+			LOGIC_PIECE_DATA[d->cp][r][i].x + o.x + d->cpos.x,
+			LOGIC_PIECE_DATA[d->cp][r][i].y + o.y + d->cpos.y
 		};
 		if (p.x < 0 || p.x >= d->w || p.y < 0 || p.y >= d->h)
 			return 1;
@@ -54,23 +54,13 @@ char collides(struct GameData *d, char /*rotation*/ r, struct Point /*offset*/ o
 	}
 }
 
-void /*drop the current piece*/ drop(struct GameData *d)
-{
-	struct Point /*offset*/ o = {0, 1};
-	while (!collides(d, d->cr, o)) {
-		o.y++;
-	}
-	o.y--;
-	d->cpos.y += o.y;
-}
-
-void /*place the current piece*/ place(struct GameData *d)
+void place(struct GameData *d)
 {
 	if (d->cp != NoPiece) {
 		for (int i = 0; i < 4; i++) {
 			struct Point /*position*/ p = {
-				pieces[d->cp][d->cr][i].x + d->cpos.x,
-				pieces[d->cp][d->cr][i].y + d->cpos.y
+				LOGIC_PIECE_DATA[d->cp][d->cr][i].x + d->cpos.x,
+				LOGIC_PIECE_DATA[d->cp][d->cr][i].y + d->cpos.y
 			};
 			d->field[p.y * d->w + p.x] = d->cp;
 		}
@@ -95,7 +85,8 @@ void /*place the current piece*/ place(struct GameData *d)
 	next_piece(d);
 }
 
-void rotate(struct GameData *d, char /*roatation*/ r) {
+void rotate(struct GameData *d, char /*roatation*/ r)
+{
 	if (!collides(d, r, (struct Point){0, 0})) {
 		d->cr = r;
 		return;
@@ -107,9 +98,9 @@ void rotate(struct GameData *d, char /*roatation*/ r) {
 	if (d->cp == OPiece) return;
 	if (d->cp == IPiece) {
 		for (int i = 0; i < 4; i++) {
-			if (!collides(d, r, irotations[d->cr][r][i])) {
-				d->cpos.x = d->cpos.x + irotations[d->cr][r][i].x;
-				d->cpos.y = d->cpos.y + irotations[d->cr][r][i].y;
+			if (!collides(d, r, SRS_IPIECE_TABLE[d->cr][r][i])) {
+				d->cpos.x = d->cpos.x + SRS_IPIECE_TABLE[d->cr][r][i].x;
+				d->cpos.y = d->cpos.y + SRS_IPIECE_TABLE[d->cr][r][i].y;
 				d->cr = r;
 				return;
 			}
@@ -117,9 +108,9 @@ void rotate(struct GameData *d, char /*roatation*/ r) {
 		return;
 	}
 	for (int i = 0; i < 4; i++) {
-		if (!collides(d, r, jltszrotations[d->cr][r][i])) {
-			d->cpos.x = d->cpos.x + jltszrotations[d->cr][r][i].x;
-			d->cpos.y = d->cpos.y + jltszrotations[d->cr][r][i].y;
+		if (!collides(d, r, SRS_NORMAL_TABLE[d->cr][r][i])) {
+			d->cpos.x = d->cpos.x + SRS_NORMAL_TABLE[d->cr][r][i].x;
+			d->cpos.y = d->cpos.y + SRS_NORMAL_TABLE[d->cr][r][i].y;
 			d->cr = r;
 			return;
 		}
@@ -127,7 +118,8 @@ void rotate(struct GameData *d, char /*roatation*/ r) {
 	return;
 }
 
-void generate_bag(char *b) {
+void generate_bag(char *b)
+{
 	//printf("logic_bag_generate %d\n", bag-logic_bag);
 	for (int i = 0; i < 7; i++) {
 		b[i] = i+1;
@@ -140,7 +132,8 @@ void generate_bag(char *b) {
 	}
 }
 
-void next_piece(struct GameData *d) {
+void next_piece(struct GameData *d)
+{
 	if (d->pc % 7 == 0) {
 		generate_bag(d->bag + (d->pc + 7) % 14);
 	}
@@ -151,7 +144,8 @@ void next_piece(struct GameData *d) {
 	d->cr = 0;
 }
 
-void /*execute the given input*/ do_input(struct GameData *d, char /*input*/ i[10]) {
+void /*execute the given input*/ do_input(struct GameData *d, char /*input*/ i[CMD_COUNT])
+{
 	//char *s[] = {"CMD_None", "CMD_Left", "CMD_Right", "CMD_Clockwise", "CMD_CounterClockwise", "CMD_OneEighty", "CMD_SoftDrop", "CMD_HardDrop", "CMD_Hold", "CMD_Reset", "CMD_Up"};
 	if (i[CMD_Left]) {
 		if (!collides(d, d->cr, (struct Point){-1, 0})) d->cpos.x -= 1;
@@ -194,7 +188,7 @@ void /*execute the given input*/ do_input(struct GameData *d, char /*input*/ i[1
 		if (!collides(d, d->cr, (struct Point){0, -1})) d->cpos.y -= 1;
 	}
 	if (i[CMD_Reset]) {
-		memset(d->field, 0, d->w*d->h);
+		memset(d->field, NoPiece, d->w*d->h);
 		d->cp = NoPiece;
 		d->hp = NoPiece;
 		generate_bag(d->bag);

@@ -30,6 +30,7 @@ enum {
 	GPiece
 };
 
+#define CMD_COUNT 10
 enum {
 	CMD_Left,
 	CMD_Right,
@@ -43,16 +44,44 @@ enum {
 	CMD_Up
 };
 
-struct GameData *game_data_new(char /*width*/ w, char /*height*/ h);
+/*
+ * Allocate and initialize the GameData struct
+ */
+struct GameData *game_data_new(char w, char h);
+/*
+ * Show the field using stdout
+ */
 void show_stdout(struct GameData *d);
+/*
+ * Check if the current piece collides with another piece
+ */
 char collides(struct GameData *d, char /*rotation*/ r, struct Point /*offset*/ o);
-void /*drop the current piece*/ drop(struct GameData *d);
-void /*place the current piece*/ place(struct GameData *d);
-void /*execute the given input*/ do_input(struct GameData *d, char /*input*/ i[10]);
-void next_piece(struct GameData *d);
+/*
+ * Place down the current piece
+ * Clear filled lines
+ * Advance curent piece
+ */
+void place(struct GameData *d);
+/*
+ * Rotate the current piece
+ * If it's not possible try the SRS table
+ */
+void rotate(struct GameData *d, char /*roatation*/ r);
+/*
+ * Generate 7 pieces and shuffle them
+ */
 void generate_bag(char *b);
+/*
+ * Take piece from bag
+ * If necessary regenerate bag
+ */
+void next_piece(struct GameData *d);
+/*
+ * Handle input
+ */
+void do_input(struct GameData *d, char /*input*/ i[CMD_COUNT]);
 
-static struct Point pieces[8][4][4] = {/*{{{*/
+static struct Point LOGIC_PIECE_DATA[8][4][4] = {/*{{{*/
 	[IPiece] = {
 		[0] = { [0] = {0, 1}, [1] = {1, 1}, [2] = {2, 1}, [3] = {3, 1} },
 		[1] = { [0] = {2, 0}, [1] = {2, 1}, [2] = {2, 2}, [3] = {2, 3} },
@@ -97,8 +126,7 @@ static struct Point pieces[8][4][4] = {/*{{{*/
 	},
 };/*}}}*/
 
-/* Rotation tables {{{*/
-static struct Point jltszrotations[4][4][4] = {
+static struct Point SRS_NORMAL_TABLE[4][4][4] = {/*{{{*/
 	[0] = {
 		[1] = {{-1, 0}, {-1,-1}, { 0, 2}, {-1, 2}},
 		[3] = {{ 1, 0}, { 1,-1}, { 0, 2}, { 1, 2}}
@@ -115,9 +143,9 @@ static struct Point jltszrotations[4][4][4] = {
 		[2] = {{-1, 0}, {-1, 1}, { 0,-2}, {-1,-2}},
 		[0] = {{-1, 0}, {-1, 1}, { 0,-2}, {-1,-2}}
 	}
-};
+};/*}}}*/
 
-static struct Point irotations[4][4][4] = {
+static struct Point SRS_IPIECE_TABLE[4][4][4] = {/*{{{*/
 	[0] = {
 		[1] = {{-2, 0}, { 1, 0}, {-2, 1}, { 1,-2}},
 		[3] = {{-1, 0}, { 2, 0}, {-1,-2}, { 2, 1}}
@@ -134,7 +162,6 @@ static struct Point irotations[4][4][4] = {
 		[2] = {{-2, 0}, { 1, 0}, {-2, 1}, { 1,-2}},
 		[0] = {{ 1, 0}, {-2, 0}, { 1, 2}, {-2,-1}}
 	}
-};
-/*}}}*/
+};/*}}}*/
 
 #endif // LOGIC_H
