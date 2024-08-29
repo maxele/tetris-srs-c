@@ -187,6 +187,7 @@ void /*execute the given input*/ do_input(struct GameData *d, char /*input*/ i[1
 			d->cp = tmp;
 			d->cpos.x = d->w / 2 - 2;
 			d->cpos.y = 0;
+			d->cr = 0;
 		}
 	}
 	if (i[CMD_Up]) {
